@@ -27,22 +27,6 @@ All project documentation is consolidated in this one file: setup, features, sco
 
 ## Install and run
 
-### Windows app (no Python)
-
-Download `FitbitDashboard-Windows.zip` from the latest GitHub Release, extract it, and run `FitbitDashboard.exe`. It opens the dashboard in your browser at `http://localhost:8080`. If port 8080 is already in use, it switches to 8082, then 8083 if necessary. Keep the console window open while using the app; closing it stops the dashboard.
-
-The app stores its database, Google token, and settings in `%LOCALAPPDATA%\FitbitDashboard`. It does not include anyone's account credentials or health records. Live Google Health access still requires each person to configure their own OAuth client; see [Google sign-in setup](#google-sign-in-setup). For the packaged app, place that person's `client_secret.json` in `%LOCALAPPDATA%\FitbitDashboard` before selecting **Connect Google**. Register callback URLs for ports 8080, 8082, and 8083; the package selects the first available port.
-
-Never share your credentials, `token.json`, or `health.db` with anyone.
-
-For an offline preview with synthetic data, run this from Command Prompt:
-
-```bat
-FitbitDashboard.exe --demo
-```
-
-### Run from source (Python)
-
 1. Download or clone this repository and keep all files together in one folder.
 2. Install Python 3.9 or newer and make sure `python` works in Command Prompt.
 3. Set up your own Google Cloud project and OAuth client as described in [Google sign-in setup](#google-sign-in-setup).
