@@ -1,0 +1,23 @@
+#workouts .workout-decay-master{position:relative;min-width:0;padding:16px!important}
+#workouts .workout-decay-master .workout-decay-kpis{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:12px!important;margin:14px 0 10px!important;width:100%!important}
+#workouts .workout-decay-master .workout-decay-kpis>div{display:flex!important;min-width:0!important;flex-direction:column!important;gap:4px!important;padding:10px 14px!important;border:1px solid rgba(255,255,255,.08)!important;border-radius:12px!important;background:rgba(255,255,255,.035)!important;box-shadow:none!important}
+#workouts .workout-decay-master .workout-decay-kpis small{display:block!important;color:#8E9BAE!important;font-size:11px!important;letter-spacing:.045em!important;text-transform:uppercase!important}
+#workouts .workout-decay-master .workout-decay-kpis b{display:block!important;color:#F8FAFC!important;font-size:19px!important;font-variant-numeric:tabular-nums!important;white-space:nowrap!important}
+#workouts .workout-decay-master .workout-decay-kpis span{display:block!important;color:#94A3B8!important;font-size:11px!important;line-height:1.35!important}
+#workouts .workout-decay-master-svg{display:block!important;width:100%!important;height:auto!important;max-width:100%!important;min-height:0!important;overflow:hidden!important;touch-action:pan-y}
+#workouts .workout-decay-master-svg .workout-recovery-dot{cursor:pointer;transition:r .12s ease,filter .12s ease}
+#workouts .workout-decay-master-svg .workout-recovery-dot:hover,#workouts .workout-decay-master-svg .workout-recovery-dot:focus{r:7;filter:drop-shadow(0 0 5px currentColor);stroke:#F8FAFC;stroke-width:2.5;outline:none}
+#workouts .workout-decay-legend{display:flex!important;align-items:center!important;gap:7px 16px!important;flex-wrap:wrap!important;margin-top:2px!important;font-size:11px!important;color:#AAB6C4!important}
+#workouts .workout-decay-legend span{white-space:nowrap}
+#workouts .workout-decay-legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:0}
+.workout-recovery-tooltip{position:fixed!important;z-index:10050!important;display:none;min-width:180px;max-width:240px;padding:10px 12px;border:1px solid rgba(255,255,255,.14);border-radius:11px;background:rgba(8,13,20,.97);box-shadow:0 12px 32px rgba(0,0,0,.42);color:#E6F0F7;font-size:11px;line-height:1.55;pointer-events:none}
+.workout-recovery-tooltip.visible{display:block!important}
+.workout-recovery-tooltip>b{display:block;margin-bottom:4px;color:#F8FAFC;font-size:12px}
+.workout-recovery-tooltip strong{float:right;color:#F8FAFC;font-variant-numeric:tabular-nums}
+.workout-recovery-tooltip small{display:block;margin-top:6px;color:#8E9BAE}
+.workout-recovery-badge{display:inline-flex;margin-top:4px;padding:2px 7px;border:1px solid color-mix(in srgb,var(--recovery-color) 45%,transparent);border-radius:999px;background:color-mix(in srgb,var(--recovery-color) 13%,transparent);color:var(--recovery-color);font-size:10px;font-weight:700}
+#card-bodytemp>.plot.plot-chart{display:block!important;position:relative!important;flex:0 0 auto!important;box-sizing:border-box!important;width:100%!important;max-width:none!important;height:320px!important;min-height:320px!important;max-height:none!important;aspect-ratio:auto!important;margin:0!important;padding:0!important;overflow:hidden!important}
+#card-bodytemp>.plot.plot-chart>svg{position:absolute!important;inset:0!important;display:block!important;width:100%!important;height:100%!important;max-width:none!important;min-height:0!important;margin:0!important}
+@media(max-width:1300px){#card-bodytemp .temp-kpi-row{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@media(max-width:850px){#workouts .workout-decay-master .workout-decay-kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}#card-bodytemp>.plot.plot-chart{height:300px!important;min-height:300px!important}}
+@media(max-width:480px){#workouts .workout-decay-master{padding:12px!important}#workouts .workout-decay-master .workout-decay-kpis{gap:8px!important}#workouts .workout-decay-master .workout-decay-kpis>div{padding:9px 10px!important}#workouts .workout-decay-master .workout-decay-kpis b{font-size:17px!important}#card-bodytemp>.plot.plot-chart{height:280px!important;min-height:280px!important}}

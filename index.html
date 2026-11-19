@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Health dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/device-health.css">
+<link rel="stylesheet" href="css/battery-layout.css">
+<link rel="stylesheet" href="css/wear-hero.css">
+<link rel="stylesheet" href="css/hr-spread.css">
+</head>
+<link rel="stylesheet" href="css/hover-fixes.css">
+<script src="js/detail-box.js"></script>
+<body>
+<div id="srAnnounce" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+<div class="app-shell">
+<aside class="sidebar" aria-label="Dashboard sections">
+  <div class="brand">◉ Health Lab</div>
+  <div class="nav-label">Your dashboard</div>
+  <button class="navbtn active" data-section="overview"><span>⌂</span> Overview</button>
+  <button class="navbtn" data-section="heart"><span>♥</span> Heart &amp; recovery</button>
+  <button class="navbtn" data-section="sleep"><span>☾</span> Sleep</button>
+  <button class="navbtn" data-section="activity"><span>↗</span> Activity &amp; fitness</button>
+  <button class="navbtn" data-section="patterns"><span>⌁</span> Personal patterns</button>
+  <button class="navbtn" data-section="quality"><span>✓</span> Data quality</button>
+  <button class="navbtn" data-section="device-health"><span>⌚</span> Device health</button>
+  <div class="side-note">Personal trends, not medical diagnosis.<br>Data stays on this computer.</div>
+</aside>
+<div class="content"><main>
+  <header class="top">
+    <h1 id="personalGreeting">Health</h1>
+    <span class="badge" id="demo" hidden>demo data</span>
+    <span class="sub" id="synced"></span>
+    <span class="grow"></span>
+    <div class="seg" role="group" aria-label="Date range" id="range">
+      <button data-d="1" aria-pressed="false">1 day</button>
+      <button data-d="7" aria-pressed="false">1 week</button>
+      <button data-d="30" aria-pressed="true">30 days</button>
+      <button data-d="ytd" aria-pressed="false">YTD</button>
+      <button data-d="all" aria-pressed="false">All time</button>
+    </div>
+    <button class="act" id="openSettings">⚙ Settings</button>
+    <button class="act" id="sync">Sync now</button>
+    <button class="act" id="connectGoogle" type="button" hidden>Connect Google</button>
+  </header>
+  <div id="banners"></div>
+  <h1 class="page-title" id="sectionTitle">Overview</h1>
+  <p class="page-desc" id="sectionDesc"></p>
+  <div id="sectionAnnounce" class="sr-only" aria-live="polite"></div>
+
+  <section id="overviewView">
+    <section class="hero-card" id="heroCard"></section>
+    <div class="overview-grid" id="overviewBoxes"></div>
+    <div class="grid" id="overviewCharts"></div>
+  </section>
+
+  <section id="detailView" hidden>
+    <div class="subtabs" id="activitySubtabs" hidden>
+      <button class="subtab" data-atab="daily" aria-selected="true">Daily</button>
+      <button class="subtab" data-atab="workouts" aria-selected="false">Workouts</button>
+    </div>
+    <div class="kpis" id="kpis"></div>
+    <section class="card wide hidden-by-nav" id="workoutsCard" data-section="activity" data-subtab="workouts">
+      <header><h2>Workout log</h2><span class="hint">Recorded sessions; daily VO₂ max is marked with an asterisk when used as a fallback</span></header>
+      <div id="workouts"></div>
+    </section>
+    <div class="grid" id="charts"></div>
+    <div class="card" style="margin-top:12px;grid-column:span 3;width:fit-content;max-width:100%" id="heatmapCard">
+      <header><h2>Workout heatmap · selected date range</h2>
+        <span class="hint">Intensity = workout minutes × calories that day</span></header>
+      <div id="heatmap"></div>
+    </div>
+  </section>
+</main></div></div>
+
+<div class="name-backdrop" id="nameBackdrop" aria-hidden="true">
+  <form class="name-dialog" id="nameForm" role="dialog" aria-modal="true" aria-labelledby="nameTitle">
+    <h2 id="nameTitle">What should I call you?</h2>
+    <p>Your name is saved only in this browser and will appear in the dashboard greeting.</p>
+    <label for="dashboardName">Your name<input id="dashboardName" name="name" type="text" maxlength="40" autocomplete="given-name" required placeholder="Enter your name"></label>
+    <div class="actions"><button class="act" type="submit">Save name</button></div>
+  </form>
+</div><div class="settings-backdrop" id="settingsBackdrop">
+  <form class="settings-panel" id="settingsForm" role="dialog" aria-modal="true" aria-labelledby="setTitle">
+    <header class="settings-heading"><h2 id="setTitle">Personal settings</h2><button type="button" class="settings-close" id="closeSettings" aria-label="Close settings">×</button></header>
+    <div class="settings-biometrics">
+      <label class="setting-field">Age <span class="unit-input"><input type="number" id="setAge" min="10" max="100" step="1"><i>yrs</i></span></label>
+      <label class="setting-field">Sex <select id="setSex"><option value="m">Male</option><option value="f">Female</option></select></label>
+      <label class="setting-field">Height <span class="unit-input"><input type="number" id="setHeight" min="100" max="230" step="1"><i>cm</i></span></label>
+      <label class="setting-field">Weight <span class="unit-input"><input type="number" id="setWeight" min="30" max="250" step="0.1"><i>kg</i></span></label>
+      <label class="setting-field setting-goal">Daily sleep goal <span class="unit-input"><input type="number" id="setSleepGoal" min="5" max="12" step="0.5"><i>hrs</i></span></label>
+    </div>
+    <section class="glass-control" aria-label="Glass appearance settings"><div class="glass-control-head"><strong>Glass Translucency</strong><output id="glassSettingsValue" for="glassSettingsRange">60%</output></div><input class="glass-range" id="glassSettingsRange" type="range" min="0" max="100" value="60"><div class="glass-presets"><button type="button" data-glass-preset="0">Solid</button><button type="button" data-glass-preset="60">Frosted</button><button type="button" data-glass-preset="100">Liquid</button></div><p class="sub" style="margin:0">Adjusts the translucency of the whole dashboard instantly.</p></section>
+    <section class="glass-control palette-control" aria-label="Background color palette"><div class="glass-control-head"><strong>Ambient background</strong><span class="sub">Glow palette</span></div><div class="glass-palette" role="group" aria-label="Dashboard background palettes"><button type="button" class="glass-swatch" data-bg-palette="ocean" aria-label="Ocean: teal and sapphire" title="Ocean"><i style="background:linear-gradient(135deg,#0B7F70,#3044A6,#91662A)"></i><span>Ocean</span></button><button type="button" class="glass-swatch" data-bg-palette="aurora" aria-label="Aurora: violet and cyan" title="Aurora"><i style="background:linear-gradient(135deg,#5A37A0,#258FA8,#A3526B)"></i><span>Aurora</span></button><button type="button" class="glass-swatch" data-bg-palette="arctic" aria-label="Arctic: blue and glacial teal" title="Arctic"><i style="background:linear-gradient(135deg,#195E95,#3650A5,#188FAD)"></i><span>Arctic</span></button><button type="button" class="glass-swatch" data-bg-palette="ember" aria-label="Ember: rose and warm amber" title="Ember"><i style="background:linear-gradient(135deg,#803044,#58357E,#C27E2C)"></i><span>Ember</span></button><button type="button" class="glass-swatch" data-bg-palette="sage" aria-label="Sage: forest and muted gold" title="Sage"><i style="background:linear-gradient(135deg,#25704F,#3C6377,#967842)"></i><span>Sage</span></button></div></section>
+    <p class="sub settings-storage-note">Used only to compute VO₂ max, fitness age, HR zones, sleep debt and the sleep-quality ranges. Stored locally in health.db.</p>
+    <p class="settings-save-status" id="settingsSaveStatus" role="status" aria-live="polite"></p>
+    <div class="actions">
+      <button class="act" type="button" id="cancelSettings">Cancel</button>
+      <button class="act settings-save" type="submit" id="saveSettings">Save</button>
+    </div>
+  </form>
+</div>
+
+<link rel="stylesheet" href="css/liquid-glass-overrides.css">
+<link rel="stylesheet" href="css/recovery-chart-layout.css">
+<script src="js/theme-utils.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/data-helpers.js"></script>
+<script src="js/scoring.js"></script>
+<script src="js/overview.js"></script>
+<script src="js/recovery.js"></script>
+<script src="js/sleep.js"></script>
+<script src="js/training-load.js"></script>
+<script src="js/patterns-diagnostics.js"></script>
+<script src="js/explorers.js"></script>
+<script src="js/device-health.js"></script>
+<script src="js/cards.js"></script>
+<script src="js/render-pipeline.js"></script>
+<script src="js/workouts.js"></script>
+<script src="js/settings-boot.js"></script>
+<script src="js/avg-split.js"></script>
+<script src="js/layout.js"></script>
+</body>
+</html>

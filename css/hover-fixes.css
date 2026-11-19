@@ -1,0 +1,79 @@
+  /* 1. Override all 4 style blocks to stop cards, SVGs, and dots from enlarging on hover */
+  .card, .tile, .consolidated, .workout-feature, .plot, .plot svg,
+  .card:hover, .tile:hover, .consolidated:hover, .workout-feature:hover, .plot:hover, .plot svg:hover {
+    transform: none !important;
+  }
+  .plot {
+    overflow: hidden !important;
+  }
+  .plot svg circle:hover,
+  .plot svg rect:hover,
+  .spo2-raw-dot:hover,
+  .hrbox-svg .hrbox-mark:hover {
+    transform: none !important;
+  }
+
+  /* 2. Prevent existing absolute tooltips from stretching CSS Grid columns */
+  .tip, .spo2-tip, .hrv-hover-tip {
+    position: fixed !important;
+    z-index: 10060 !important;
+    pointer-events: none !important;
+  }
+
+  /* 3. Unified floating datapoint info box */
+  .dp-detail-box {
+    position: fixed;
+    z-index: 10070;
+    display: none;
+    pointer-events: none;
+    min-width: 200px;
+    max-width: min(330px, calc(100vw - 24px));
+    padding: 11px 14px;
+    border-radius: 12px;
+    background: rgba(17, 24, 33, 0.94);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.6);
+    color: var(--ink, #E8F0F6);
+    font: 12px/1.45 var(--font-sans, sans-serif);
+  }
+  .dp-detail-box .dp-head {
+    font-size: 13px;
+    font-weight: 650;
+    color: #fff;
+    margin-bottom: 2px;
+  }
+  .dp-detail-box .dp-sub {
+    font-size: 11px;
+    color: var(--ink2, #91A2B2);
+    padding-bottom: 6px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .dp-detail-box .dp-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 2px 0;
+  }
+  .dp-detail-box .dp-label {
+    color: var(--ink2, #91A2B2);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dp-detail-box .dp-swatch {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .dp-detail-box .dp-val {
+    color: var(--ink, #E8F0F6);
+    font-family: var(--font-mono, monospace);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    text-align: right;
+  }
