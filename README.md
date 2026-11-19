@@ -54,13 +54,7 @@ Each person must configure their own Google Cloud project and OAuth client. The 
 1. In Google Cloud Console, create a project and enable the Google Health API, if your account/project is eligible to use it.
 2. Configure the OAuth consent screen. If your app is in **Testing** mode, add the Google account you will sign in with as a test user.
 3. Create an OAuth client ID with application type **Web application**.
-4. Add this exact **Authorized redirect URI**:
-
-   ```text
-   http://localhost:8080/oauth/callback
-   http://localhost:8082/oauth/callback
-   http://localhost:8083/oauth/callback
-   ```
+4. Can add google.com as the **Authorized redirect URI**
 
 5. Download the client JSON as `client_secret.json`. For the packaged app, place it in `%LOCALAPPDATA%\FitbitDashboard`; for a source checkout, place it beside `gh.py`.
 6. Start the dashboard, then use **Connect Google**. The token is saved locally as `token.json` and the initial sync starts in the background.
