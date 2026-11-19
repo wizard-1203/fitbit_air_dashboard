@@ -489,6 +489,3 @@ Hard-refresh with **Ctrl+F5**. If files were replaced while the server was runni
 ## License
 
 This project is available under the MIT License. See [LICENSE](LICENSE).
-#   F i t b i t _ A i r _ D a s h b o a r d  
- #   F i t b i t _ A i r _ D a s h b o a r d  
- 
