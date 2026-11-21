@@ -50,7 +50,14 @@ function heartBox(){
 function sleepBox(){
   const mains=(D.sleep||[]).filter(s=>s.main).sort((a,b)=>a.start.localeCompare(b.start));
   const last = mains[mains.length-1] || null;
-  for(const past of (D.sleep_score_history||[]).filter(s=>s.main&&!s.nap&&Number(s.asleep)>0).slice(-28)){if(String(past.id)!==String(last?.id||''))requestSleepSnapshot(past,sleepScoreComponents(past));}
+  window._requestedSleepSnapshots=window._requestedSleepSnapshots||new Set();
+  for(const past of (D.sleep_score_history||[]).filter(s=>s.main&&!s.nap&&Number(s.asleep)>0).slice(-28)){
+    const sid=String(past.id);
+    if(sid!==String(last?.id||'')&&!window._requestedSleepSnapshots.has(sid)){
+      window._requestedSleepSnapshots.add(sid);
+      requestSleepSnapshot(past,sleepScoreComponents(past));
+    }
+  }
   const last7 = mains.slice(-7);
   const avgAsleep=mean(last7.map(s=>s.asleep));
   const avgDeep=mean(last7.map(s=>s.deep));
@@ -208,8 +215,8 @@ function renderOverview(){
 }
 
 window.selectHrDay=async function(date){if(!date)return;window._hrDayDate=date;const host=document.querySelector('#card-hr24 .plot');if(host)host.innerHTML='<div class="skeleton"></div>';try{const resp=await fetch('/api/hr-day?date='+encodeURIComponent(date));if(!resp.ok)throw new Error('Unable to load this date');const data=await resp.json();window._hrSelectedSamples=data.samples||[];drawHr24();}catch(e){if(host)host.innerHTML='<div class="empty">Could not load heart-rate readings for this date. '+esc(e.message)+'</div>';}};
-function karvonenStops(edges){
-  const lo=40,hi=155,colors=['#38BDF8','#10B981','#F59E0B','#F43F5E','#F43F5E'],cuts=[lo,...edges.slice(1,5),hi].map(v=>clamp(Number(v),lo,hi));
+function karvonenStops(edges,lo=40,hi=155){
+  const colors=['#38BDF8','#10B981','#F59E0B','#F43F5E','#F43F5E'],cuts=[lo,...edges.slice(1,5),hi].map(v=>clamp(Number(v),lo,hi));
   const stops=[{value:lo,color:colors[0]}];for(let i=1;i<cuts.length-1;i++){stops.push({value:cuts[i],color:colors[i-1]},{value:cuts[i],color:colors[i]});}stops.push({value:hi,color:colors.at(-1)});return stops;
 }
 function drawHr24(){
@@ -273,9 +280,13 @@ function drawHr24(){
     : [0.50,0.60,0.70,0.80,0.90,1.00].map(p=>zoneRhr+zoneReserve*p);
   const hrDomainValues=actual.map(p=>Number(p.y)).filter(Number.isFinite);
   const dataMin=Math.min(...hrDomainValues),dataMax=Math.max(...hrDomainValues);
-  const chartYMin=40,chartYMax=155,hrYTicks=[40,60,80,100,120,140];
+  const chartYMin=dataMin<42?Math.floor((dataMin-5)/5)*5:40;
+  const chartYMax=Math.max(155,Math.ceil((dataMax+10)/10)*10);
+  const hrYTicks=[];
+  for(let t=Math.ceil(chartYMin/20)*20;t<=chartYMax;t+=20)hrYTicks.push(t);
+  if(chartYMax-hrYTicks.at(-1)>=10)hrYTicks.push(chartYMax);
   const zoneBands=[
-    {y1:40,y2:zoneEdges[1],color:'#3B82F6',opacity:.09,dash:'4 4',label:'ZONE 1 · LIGHT',labelRight:true,labelSize:10,labelColor:'rgba(255,255,255,.35)'},
+    {y1:chartYMin,y2:zoneEdges[1],color:'#3B82F6',opacity:.09,dash:'4 4',label:'ZONE 1 · LIGHT',labelRight:true,labelSize:10,labelColor:'rgba(255,255,255,.35)'},
     {y1:zoneEdges[1],y2:zoneEdges[2],color:'#10B981',opacity:.12,dash:'4 4',label:'ZONE 2 · AEROBIC',labelRight:true,labelSize:10,labelColor:'rgba(255,255,255,.35)'},
     {y1:zoneEdges[2],y2:zoneEdges[3],color:'#F59E0B',opacity:.12,dash:'4 4',label:'ZONE 3 · TEMPO',labelRight:true,labelSize:10,labelColor:'rgba(255,255,255,.35)'},
     {y1:zoneEdges[3],y2:zoneEdges[4],color:'#FB7185',opacity:.08,dash:'4 4'},
@@ -283,13 +294,14 @@ function drawHr24(){
   ];
   const gapBridges=[];for(let i=1;i<actual.length;i++){const a=actual[i-1],b=actual[i];if(b.x-a.x>7.5*60000)gapBridges.push({a:a.x,b:b.x,ya:a.y,yb:b.y});}
   const zoneThresholds=zoneEdges.slice(1,5).map(y=>({y,color:'#94A3B8',label:null,dash:'4 5'}));
+  const minPt=actual.reduce((a,p)=>p.y<a.y?p:a),maxPt=actual.reduce((a,p)=>p.y>a.y?p:a);
   drawChart(host, {
-     kind:'line',pts:chartActual,color:'#E2E8F0',lineWidth:2.2,avgPillGlass:true,zoneGradientStops:karvonenStops(zoneEdges),bandColor:'#94A3B8',bandOpacity:0,trendBand:!!window._hr24ShowTypical,trendBandColor:'rgba(148,163,184,1)',trendBandOpacity:.15,trendLine:!!window._hr24ShowTypical,zoneColored:false,lineGlowFilter:'drop-shadow(0 0 4px rgba(103,232,249,.42))',thresholds:zoneThresholds.filter(t=>t.y>chartYMin&&t.y<chartYMax).map(t=>({...t,label:null})),referenceLineOpacity:.15,trendSmooth:true,avg,avgPill:true,avgPillInside:true,avgPillSide:'right',avgPillText:`avg ${avg==null?'':avg.toFixed(1)} bpm`,avgColor:'#2DD4BF',gapBridges,
-     extrema:[{...actual.reduce((a,p)=>p.y<a.y?p:a),type:'min',label:`MIN ${Number(actual.reduce((a,p)=>p.y<a.y?p:a).y).toFixed(0)}`,above:false},{...actual.reduce((a,p)=>p.y>a.y?p:a),type:'max',label:`MAX ${Number(actual.reduce((a,p)=>p.y>a.y?p:a).y).toFixed(0)}`,above:true}],
+     kind:'line',pts:chartActual,color:'#E2E8F0',lineWidth:2.2,avgPillGlass:true,zoneGradientStops:karvonenStops(zoneEdges,chartYMin,chartYMax),bandColor:'#94A3B8',bandOpacity:0,trendBand:!!window._hr24ShowTypical,trendBandColor:'rgba(148,163,184,1)',trendBandOpacity:.15,trendLine:!!window._hr24ShowTypical,zoneColored:false,lineGlowFilter:'drop-shadow(0 0 4px rgba(103,232,249,.42))',thresholds:zoneThresholds.filter(t=>t.y>chartYMin&&t.y<chartYMax).map(t=>({...t,label:null})),referenceLineOpacity:.15,trendSmooth:true,avg,avgPill:true,avgPillInside:true,avgPillSide:'right',avgPillText:`avg ${avg==null?'':avg.toFixed(1)} bpm`,avgColor:'#2DD4BF',gapBridges,
+     extrema:[{...minPt,type:'min',label:`MIN ${Number(minPt.y).toFixed(0)}`,above:minPt.y<chartYMin+8},{...maxPt,type:'max',label:`MAX ${Number(maxPt.y).toFixed(0)}`,above:maxPt.y<=chartYMax-8}],
     fmtAvg: avg==null?'':avg.toFixed(1)+' bpm',
     trendPts:trend.map(p=>({...p})),trendColor:'rgba(148,163,184,.48)',trendSmooth:true,
     sleepBands,contextWindows,hideContextLabels:false,bands:zoneBands,
-    xTicks,xMin:actualStart,xMax:actualEnd,fixedClockTicks:true,xTickLabel:t=>{if(t>=actualEnd-1000)return '12 AM';const d=new Date(t),h=d.getHours();return `${h%12||12} ${h<12?'AM':'PM'}`;},axisLabelsInside:true,yTickValues:[...hrYTicks,155],
+    xTicks,xMin:actualStart,xMax:actualEnd,fixedClockTicks:true,xTickLabel:t=>{if(t>=actualEnd-1000)return '12 AM';const d=new Date(t),h=d.getHours();return `${h%12||12} ${h<12?'AM':'PM'}`;},axisLabelsInside:true,yTickValues:hrYTicks,
     fmtX:fmtTime,fmtY:v=>Math.round(v),label:'Heart rate from midnight to midnight; future hours remain blank',h:420,padTop:44,padBottom:38,yMin:chartYMin,yMax:chartYMax,areaGradient:false,areaGapMs:7.5*60000,
     scatter: false,
     tip: q => {
@@ -325,7 +337,8 @@ function drawHr24(){
     const p=arr[Math.floor(arr.length/2)],d=new Date(p.x);
     if(workouts.some(([a,b])=>p.x>=a&&p.x<=b))continue;
     const slot=d.getHours()*12+Math.floor(d.getMinutes()/5),dow=String((d.getDay()+6)%7);
-    const rawExpected=wa.by_weekday?.[dow]?.[String(slot)];
+    const daySeries=wa.by_weekday?.[dow]||(d.toDateString()===new Date(D.today+'T00:00:00').toDateString()?wa.current:null);
+    const rawExpected=daySeries?.[String(slot)];
     // Null historical bins must be skipped; Number(null) incorrectly turns them into 0 bpm.
     if(rawExpected==null||rawExpected==='')continue;
     const exp=Number(rawExpected),sigmaRaw=wa.sigma_by_weekday?.[dow]?.[String(slot)],sigma=Number(sigmaRaw)||3;
@@ -333,24 +346,23 @@ function drawHr24(){
   }
   let foot='';
   if(paired.length>=12){
-    const rawOffset=medianValues(paired.map(p=>p.a-p.b));
-    const core=paired.filter(p=>Math.abs((p.a-p.b-rawOffset)/p.sigma)<2);
-    const base=core.length>=12?core:paired;
-    const offset=medianValues(base.map(p=>p.a-p.b));
-    const baseMean=mean(base.map(p=>p.a));
-    const sseExpected=base.reduce((sum,p)=>sum+(p.a-p.b-offset)**2,0);
-    const sseFlat=Math.max(base.reduce((sum,p)=>sum+(p.a-baseMean)**2,0),base.length*36);
-    const match=sseFlat>0?100*Math.max(0,1-sseExpected/sseFlat):0;
+    const offset=medianValues(paired.map(p=>p.a-p.b));
+    const maez=mean(paired.map(p=>Math.abs(p.a-p.b)/p.sigma));
+    const match=100*Math.exp(-0.5*maez*maez);
     const inBand=100*paired.filter(p=>Math.abs((p.a-p.b)/p.sigma)<=1).length/paired.length;
     let flagged=0,run=0,runStart=null,runEnd=null,flags=[];
-    for(const p of paired){if(Math.abs((p.a-p.b-offset)/p.sigma)>=2){if(!run)runStart=p.x;run++;runEnd=p.x;}else{if(run>=3)flags.push({start:runStart,end:runEnd});run=0;}}
+    for(const p of paired){
+      const isOutlier=Math.abs((p.a-p.b-offset)/p.sigma)>=2;
+      if(isOutlier&&(!run||p.x-runEnd<=10*60000)){if(!run)runStart=p.x;run++;runEnd=p.x;}
+      else{if(run>=3)flags.push({start:runStart,end:runEnd});run=isOutlier?1:0;runStart=isOutlier?p.x:null;runEnd=isOutlier?p.x:null;}
+    }
     if(run>=3)flags.push({start:runStart,end:runEnd});flagged=flags.length;
     const neff=medianValues(paired.map(p=>Number(wa.neff_by_weekday?.[String((new Date(p.x).getDay()+6)%7)]?.[String(new Date(p.x).getHours()*12+Math.floor(new Date(p.x).getMinutes()/5))]||0)));
     const confidence=neff<3?'Low':neff<=6?'Medium':'High';
     const coverage=Math.round(100*paired.length/Math.max(1,Math.ceil((actualEnd-matchStart.getTime())/(5*60000))));
-    const binNote=base.length===paired.length?`${paired.length} matched bins`:`${base.length} of ${paired.length} bins used`;
-    const matchTitle=base.length===paired.length?'Shape match after removing the level offset':'Shape match after removing the level offset and local spikes';
-    const flagText=flags.map(f=>`${fmtTime(f.start)}–${fmtTime(f.end)} (${Math.round((f.end-f.start)/60000+5)} min)`).join(' · '),deviationDetails=flags.map((f,i)=>{const eventBins=paired.filter(p=>p.x>=f.start&&p.x<=f.end),peak=eventBins.reduce((a,b)=>Math.abs(b.a-b.b-offset)>Math.abs(a.a-a.b-offset)?b:a,eventBins[0]||{a:0,b:0}),activity=sessions.find(q=>q.a<=f.end&&q.b>=f.start);return `<li><b>${i===0?'Deviation':''} ${fmtTime(f.start)}–${fmtTime(f.end)}</b><span>${peak.a-peak.b>=0?'+':''}${(peak.a-peak.b).toFixed(0)} bpm vs baseline${activity?' · '+esc(String(activity.w.type||'Workout').replace(/_/g,' ')):''}</span></li>`;}).join('');
+    const binNote=`${paired.length} matched bins`;
+    const matchTitle='Pattern similarity across all matched bins vs. your historical weekday baseline';
+    const deviationDetails=flags.map((f,i)=>{const eventBins=paired.filter(p=>p.x>=f.start&&p.x<=f.end),peak=eventBins.reduce((a,b)=>Math.abs(b.a-b.b-offset)>Math.abs(a.a-a.b-offset)?b:a,eventBins[0]||{a:0,b:0}),activity=sessions.find(q=>q.a<=f.end&&q.b>=f.start);return `<li><b>${i===0?'Deviation':''} ${fmtTime(f.start)}–${fmtTime(f.end)}</b><span>${peak.a-peak.b>=0?'+':''}${(peak.a-peak.b).toFixed(0)} bpm vs baseline${activity?' · '+esc(String(activity.w.type||'Workout').replace(/_/g,' ')):''}</span></li>`;}).join('');
     foot=`<div class="hr24-kpis"><div class="hr24-kpi hr24-kpi-match" tabindex="0" title="${matchTitle}" aria-label="Typical match ${match.toFixed(1)}%. ${matchTitle}"><span class="hr24-kpi-label">Typical Match</span><span class="hr24-ring" style="--match:${match.toFixed(1)}%"><b>${match.toFixed(1)}%</b></span><span class="hr24-kpi-note">${binNote}</span></div><div class="hr24-kpi"><span class="hr24-kpi-label">Within Typical Band</span><strong>${inBand.toFixed(0)}%</strong><span class="hr24-kpi-note">±1 historical spread</span></div><div class="hr24-kpi"><span class="hr24-kpi-label">Baseline Level Offset</span><strong>${offset>=0?'+':''}${offset.toFixed(1)} bpm</strong><span class="hr24-kpi-note">${coverage}% coverage · ${confidence} confidence</span></div>${flagged?`<div class="hr24-alert"><div class="hr24-alert-head"><span>Elevated deviations</span><strong>⚠ ${flagged} · ${flags.reduce((a,f)=>a+Math.round((f.end-f.start)/60000+5),0)} min total</strong></div><ul class="hr24-event-list">${deviationDetails}</ul></div>`:''}</div>`;
   }else foot=`<div class="sub">Not enough overlapping data yet (need at least 12 valid 5-minute bins / 1 hour since local midnight). Matching resets at midnight; missing readings are not treated as zero.</div>`;
   const mainSleeps=(D.sleep||[]).filter(s=>s.main).sort((a,b)=>a.start.localeCompare(b.start)),lastSleep=mainSleeps[mainSleeps.length-1],avgInterruptions=mean(mainSleeps.slice(-7).map(s=>s.interruptions).filter(Number.isFinite)),interruptions=lastSleep?.interruptions;
