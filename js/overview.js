@@ -333,20 +333,25 @@ function drawHr24(){
   }
   let foot='';
   if(paired.length>=12){
-    const actualMean=mean(paired.map(p=>p.a));
-    const sseExpected=paired.reduce((sum,p)=>sum+(p.a-p.b)**2,0);
-    const sseFlat=paired.reduce((sum,p)=>sum+(p.a-actualMean)**2,0);
+    const rawOffset=medianValues(paired.map(p=>p.a-p.b));
+    const core=paired.filter(p=>Math.abs((p.a-p.b-rawOffset)/p.sigma)<2);
+    const base=core.length>=12?core:paired;
+    const offset=medianValues(base.map(p=>p.a-p.b));
+    const baseMean=mean(base.map(p=>p.a));
+    const sseExpected=base.reduce((sum,p)=>sum+(p.a-p.b-offset)**2,0);
+    const sseFlat=Math.max(base.reduce((sum,p)=>sum+(p.a-baseMean)**2,0),base.length*36);
     const match=sseFlat>0?100*Math.max(0,1-sseExpected/sseFlat):0;
-    const offset=medianValues(paired.map(p=>p.a-p.b));
     const inBand=100*paired.filter(p=>Math.abs((p.a-p.b)/p.sigma)<=1).length/paired.length;
     let flagged=0,run=0,runStart=null,runEnd=null,flags=[];
-    for(const p of paired){if(Math.abs((p.a-p.b)/p.sigma)>=2){if(!run)runStart=p.x;run++;runEnd=p.x;}else{if(run>=3)flags.push({start:runStart,end:runEnd});run=0;}}
+    for(const p of paired){if(Math.abs((p.a-p.b-offset)/p.sigma)>=2){if(!run)runStart=p.x;run++;runEnd=p.x;}else{if(run>=3)flags.push({start:runStart,end:runEnd});run=0;}}
     if(run>=3)flags.push({start:runStart,end:runEnd});flagged=flags.length;
     const neff=medianValues(paired.map(p=>Number(wa.neff_by_weekday?.[String((new Date(p.x).getDay()+6)%7)]?.[String(new Date(p.x).getHours()*12+Math.floor(new Date(p.x).getMinutes()/5))]||0)));
     const confidence=neff<3?'Low':neff<=6?'Medium':'High';
     const coverage=Math.round(100*paired.length/Math.max(1,Math.ceil((actualEnd-matchStart.getTime())/(5*60000))));
-    const flagText=flags.map(f=>`${fmtTime(f.start)}–${fmtTime(f.end)} (${Math.round((f.end-f.start)/60000+5)} min)`).join(' · '),deviationDetails=flags.map((f,i)=>{const eventBins=paired.filter(p=>p.x>=f.start&&p.x<=f.end),peak=eventBins.reduce((a,b)=>Math.abs(b.a-b.b)>Math.abs(a.a-a.b)?b:a,eventBins[0]||{a:0,b:0}),activity=sessions.find(q=>q.a<=f.end&&q.b>=f.start);return `<li><b>${i===0?'Deviation':''} ${fmtTime(f.start)}–${fmtTime(f.end)}</b><span>${peak.a-peak.b>=0?'+':''}${(peak.a-peak.b).toFixed(0)} bpm vs baseline${activity?' · '+esc(String(activity.w.type||'Workout').replace(/_/g,' ')):''}</span></li>`;}).join('');
-    foot=`<div class="hr24-kpis"><div class="hr24-kpi hr24-kpi-match"><span class="hr24-kpi-label">Typical Match</span><span class="hr24-ring" style="--match:${match.toFixed(1)}%"><b>${match.toFixed(1)}%</b></span><span class="hr24-kpi-note">${paired.length} matched bins</span></div><div class="hr24-kpi"><span class="hr24-kpi-label">Within Typical Band</span><strong>${inBand.toFixed(0)}%</strong><span class="hr24-kpi-note">±1 historical spread</span></div><div class="hr24-kpi"><span class="hr24-kpi-label">Baseline Level Offset</span><strong>${offset>=0?'+':''}${offset.toFixed(1)} bpm</strong><span class="hr24-kpi-note">${coverage}% coverage · ${confidence} confidence</span></div>${flagged?`<div class="hr24-alert"><div class="hr24-alert-head"><span>Elevated deviations</span><strong>⚠ ${flagged} · ${flags.reduce((a,f)=>a+Math.round((f.end-f.start)/60000+5),0)} min total</strong></div><ul class="hr24-event-list">${deviationDetails}</ul></div>`:''}</div>`;
+    const binNote=base.length===paired.length?`${paired.length} matched bins`:`${base.length} of ${paired.length} bins used`;
+    const matchTitle=base.length===paired.length?'Shape match after removing the level offset':'Shape match after removing the level offset and local spikes';
+    const flagText=flags.map(f=>`${fmtTime(f.start)}–${fmtTime(f.end)} (${Math.round((f.end-f.start)/60000+5)} min)`).join(' · '),deviationDetails=flags.map((f,i)=>{const eventBins=paired.filter(p=>p.x>=f.start&&p.x<=f.end),peak=eventBins.reduce((a,b)=>Math.abs(b.a-b.b-offset)>Math.abs(a.a-a.b-offset)?b:a,eventBins[0]||{a:0,b:0}),activity=sessions.find(q=>q.a<=f.end&&q.b>=f.start);return `<li><b>${i===0?'Deviation':''} ${fmtTime(f.start)}–${fmtTime(f.end)}</b><span>${peak.a-peak.b>=0?'+':''}${(peak.a-peak.b).toFixed(0)} bpm vs baseline${activity?' · '+esc(String(activity.w.type||'Workout').replace(/_/g,' ')):''}</span></li>`;}).join('');
+    foot=`<div class="hr24-kpis"><div class="hr24-kpi hr24-kpi-match" tabindex="0" title="${matchTitle}" aria-label="Typical match ${match.toFixed(1)}%. ${matchTitle}"><span class="hr24-kpi-label">Typical Match</span><span class="hr24-ring" style="--match:${match.toFixed(1)}%"><b>${match.toFixed(1)}%</b></span><span class="hr24-kpi-note">${binNote}</span></div><div class="hr24-kpi"><span class="hr24-kpi-label">Within Typical Band</span><strong>${inBand.toFixed(0)}%</strong><span class="hr24-kpi-note">±1 historical spread</span></div><div class="hr24-kpi"><span class="hr24-kpi-label">Baseline Level Offset</span><strong>${offset>=0?'+':''}${offset.toFixed(1)} bpm</strong><span class="hr24-kpi-note">${coverage}% coverage · ${confidence} confidence</span></div>${flagged?`<div class="hr24-alert"><div class="hr24-alert-head"><span>Elevated deviations</span><strong>⚠ ${flagged} · ${flags.reduce((a,f)=>a+Math.round((f.end-f.start)/60000+5),0)} min total</strong></div><ul class="hr24-event-list">${deviationDetails}</ul></div>`:''}</div>`;
   }else foot=`<div class="sub">Not enough overlapping data yet (need at least 12 valid 5-minute bins / 1 hour since local midnight). Matching resets at midnight; missing readings are not treated as zero.</div>`;
   const mainSleeps=(D.sleep||[]).filter(s=>s.main).sort((a,b)=>a.start.localeCompare(b.start)),lastSleep=mainSleeps[mainSleeps.length-1],avgInterruptions=mean(mainSleeps.slice(-7).map(s=>s.interruptions).filter(Number.isFinite)),interruptions=lastSleep?.interruptions;
   foot+=`<div class="hr24-kpis hr24-sleep-kpis"><div class="hr24-kpi"><span class="hr24-kpi-label">Total Interruptions · Last Night</span><strong>${interruptions==null?'—':Math.round(interruptions)}</strong><span class="hr24-kpi-note">${avgInterruptions==null?'':'7-night average '+avgInterruptions.toFixed(1)}</span></div></div>`;
@@ -369,4 +374,3 @@ function drawRespRate(){
   });
   $('#card-resprate .foot').innerHTML = avg==null?'':`<div class="sub">Period mean: ${avg.toFixed(1)} breaths/min. Persistent deviations above your baseline are worth attention in context.</div>`;
 }
-
